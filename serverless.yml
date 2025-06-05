@@ -4,13 +4,14 @@ service: api-s3
 provider:
   name: aws
   runtime: python3.12
-  # Default memory size for functions (default: 256MB)
+  # Memoria por defecto para todas las Lambdas (puede sobrescribirse por función)
   memorySize: 1024
   timeout: 30
   iam:
     role: arn:aws:iam::111097882274:role/LabRole
 
 functions:
+  # 1) Función existente: Listar buckets
   lista_buckets:
     handler: lista_buckets.lambda_handler
     memorySize: 512
@@ -20,6 +21,8 @@ functions:
           method: get
           cors: true
           integration: lambda
+
+  # 2) Función existente: Listar objetos de un bucket
   lista_objetos_bucket:
     handler: lista_objetos_bucket.lambda_handler
     events:
@@ -28,3 +31,46 @@ functions:
           method: post
           cors: true
           integration: lambda
+
+  # 3) **Crear un nuevo bucket**
+  crear_bucket:
+    handler: crear_bucket.lambda_handler
+    memorySize: 256
+    events:
+      - http:
+          path: /s3/crear-bucket
+          method: post
+          cors: true
+          integration: lambda
+
+  # 4) **Crear un nuevo directorio en un bucket existente**
+  crear_directorio:
+    handler: crear_directorio.lambda_handler
+    memorySize: 256
+    events:
+      - http:
+          path: /s3/crear-directorio
+          method: post
+          cors: true
+          integration: lambda
+
+  # 5) **Subir un archivo a un directorio de un bucket existente**
+  subir_archivo:
+    handler: subir_archivo.lambda_handler
+    memorySize: 512 # puede requerir más, según el peso del archivo en Base64
+    events:
+      - http:
+          path: /s3/subir-archivo
+          method: post
+          cors: true
+          integration: lambda
+# (Opcional: plugins, custom, variables de stage, etc.)
+# Si necesitas diferenciar buckets/dev/test/prod, aquí podrías agregar
+# custom:
+#   buckets:
+#     dev: mi-bucket-dev
+#     test: mi-bucket-test
+#     prod: mi-bucket-prod
+#
+# y luego en provider.environment:
+#   BUCKET_NAME: ${self:custom.buckets.${self:provider.stage}}
